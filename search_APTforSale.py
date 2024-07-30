@@ -127,7 +127,7 @@ rem_columns = [
 # get_APIinfo(search_apt):  
 # input : 아파트명
 # output : 검색된 아파트 정보 Dataframe
-def get_APIsnum(search_aptname):        
+def get_APTComplexesList(search_aptname):        
 
     URL = "https://new.land.naver.com/api/search"
     param = {
@@ -141,6 +141,7 @@ def get_APIsnum(search_aptname):
 
     res = requests.get(URL, params=param, headers=header)
     json_str = json.loads(json.dumps(res.json()))
+    print(json_str)
     if json_str['isMoreData'] == True:
         APTlist = json_str['complexes']
         df = pd.DataFrame(APTlist)
@@ -169,10 +170,10 @@ def get_APIsnum(search_aptname):
 
 
 
-# get_APTInfo(hscpNo, tetradTpCd)::  
+# get_APTForSaleInfo(hscpNo, tetradTpCd)::  
 # input : hscpNo : 아파트번호, tetradTpCd : 거래타입
 # output : 검색된 아파트 정보 Dataframe
-def get_APTInfo(hscpNo, tetradTpCd):
+def get_APTForSaleInfo(hscpNo, tetradTpCd):
     req_URL = "https://m.land.naver.com/complex/getComplexArticleList"
     param = {
         'hscpNo': hscpNo,
@@ -208,8 +209,7 @@ def get_APTInfo(hscpNo, tetradTpCd):
             break
     
     if df.empty == False :
-        df['flrInfo'] = df['flrInfo'].str.replace('/', ' // ')
-    
+        df['flrInfo'] = df['flrInfo'].str.replace('/', ' // ')    
     
     return df
 
@@ -235,7 +235,7 @@ df_apts_sinfo = pd.DataFrame(columns=['complexName', 'complexNo', 'cortarAddress
 search_apt = st.text_input('Step 1 : 아파트 단지명을 검색하세요:') 
 
 if search_apt:
-    st.session_state['search_results'] = pd.DataFrame(get_APIsnum(search_apt)) 
+    st.session_state['search_results'] = pd.DataFrame(get_APTComplexesList(search_apt)) 
     st.session_state['selected_hscpNo_name'] = None
     st.session_state['selected_hscpNo_value'] = None
 
@@ -264,10 +264,9 @@ if st.session_state['selected_hscpNo_value'] :
     selected_tetradTpCd_name = st.selectbox('Step 3 : 타입을 고르세요', list(tetradTpCd_options.keys()))
     st.session_state['selected_tetradTpCd_value']  = tetradTpCd_options[selected_tetradTpCd_name]   
 
-    
-    df_APSsForSale = pd.DataFrame(get_APTInfo(st.session_state['selected_hscpNo_value'], st.session_state['selected_tetradTpCd_value']))    
+    df_APSsForSale = pd.DataFrame(get_APTForSaleInfo(st.session_state['selected_hscpNo_value'], st.session_state['selected_tetradTpCd_value']))    
     df_APSsForSale = df_APSsForSale.reindex(columns=predefined_columns)    
     df_APSsForSale = df_APSsForSale.set_axis(new_columns, axis=1)
     df_APSsForSale.drop(rem_columns, axis=1, inplace=True)  
     st.write("[ " + st.session_state['selected_hscpNo_name'] + " ] 매물수 : " + str(len(df_APSsForSale)))
-    st.dataframe(df_APSsForSale) 
+    st.dataframe(df_APSsForSale)
