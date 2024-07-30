@@ -141,25 +141,29 @@ def get_APIsnum(search_aptname):
 
     res = requests.get(URL, params=param, headers=header)
     json_str = json.loads(json.dumps(res.json()))
-    APTlist = json_str['complexes']
-    df = pd.DataFrame(APTlist)
-    page = 1
-    while True:
-        page += 1
-        param['page'] = page        
-        res = requests.get(URL, params=param, headers=header)
-        json_str = json.loads(json.dumps(res.json()))
-        APTlist = json_str['complexes'] 
-        nex_df = pd.DataFrame(APTlist)
-        df = pd.concat([df,nex_df])
-        # 데이터 더 없으면 break
-        if json_str['isMoreData'] == False:
-            break
+    if json_str['isMoreData'] == True:
+        APTlist = json_str['complexes']
+        df = pd.DataFrame(APTlist)
+        page = 1
+        while True:
+            page += 1
+            param['page'] = page        
+            res = requests.get(URL, params=param, headers=header)
+            json_str = json.loads(json.dumps(res.json()))
+            APTlist = json_str['complexes'] 
+            nex_df = pd.DataFrame(APTlist)
+            df = pd.concat([df,nex_df])
+            # 데이터 더 없으면 break
+            if json_str['isMoreData'] == False:
+                break
             
-    res_df = pd.DataFrame(columns=['complexName', 'complexNo', 'cortarAddress'])
-    res_df['complexName'] = df['complexName']
-    res_df['complexNo'] = df['complexNo']
-    res_df['cortarAddress'] = df['cortarAddress']
+        res_df = pd.DataFrame(columns=['complexName', 'complexNo', 'cortarAddress'])
+        res_df['complexName'] = df['complexName']
+        res_df['complexNo'] = df['complexNo']
+        res_df['cortarAddress'] = df['cortarAddress']
+    
+    else:
+        res_df = pd.DataFrame(columns=['complexName', 'complexNo', 'cortarAddress'])
 
     return res_df
 
@@ -229,9 +233,8 @@ df_apts_sinfo = pd.DataFrame(columns=['complexName', 'complexNo', 'cortarAddress
 
 # 1단계: 아파트이름으로 아파트리스트 검색
 search_apt = st.text_input('Step 1 : 아파트 단지명을 검색하세요:') 
-search_button = st.button('검색')
 
-if search_button:
+if search_apt:
     st.session_state['search_results'] = pd.DataFrame(get_APIsnum(search_apt)) 
     st.session_state['selected_hscpNo_name'] = None
     st.session_state['selected_hscpNo_value'] = None
@@ -245,7 +248,9 @@ if not st.session_state['search_results'].empty:
     if APT_name:        
         selected_APT = st.session_state['search_results'][st.session_state['search_results']['complexName'] == APT_name]
         st.session_state['selected_hscpNo_name'] = selected_APT['complexName'].values[0]
-        st.session_state['selected_hscpNo_value'] = selected_APT['complexNo'].values[0]    
+        st.session_state['selected_hscpNo_value'] = selected_APT['complexNo'].values[0]
+else:
+    st.write("데이터 없음") 
 
 # 2단계: 거래 타입 설정 하여 바로 검색
 if st.session_state['selected_hscpNo_value'] :
@@ -265,15 +270,4 @@ if st.session_state['selected_hscpNo_value'] :
     df_APSsForSale = df_APSsForSale.set_axis(new_columns, axis=1)
     df_APSsForSale.drop(rem_columns, axis=1, inplace=True)  
     st.write("[ " + st.session_state['selected_hscpNo_name'] + " ] 매물수 : " + str(len(df_APSsForSale)))
-    st.dataframe(df_APSsForSale)  
-
-
-
-    
-
-    
-    
-
-    
-    
-
+    st.dataframe(df_APSsForSale) 
